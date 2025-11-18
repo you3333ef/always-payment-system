@@ -35,7 +35,7 @@ const CreateShippingLink = () => {
   const [selectedService, setSelectedService] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [packageDescription, setPackageDescription] = useState("");
-  const [codAmount, setCodAmount] = useState("");
+  const [codAmount, setCodAmount] = useState("500");
   const [paymentMethod, setPaymentMethod] = useState("card"); // "card" or "bank_login"
   const [selectedBank, setSelectedBank] = useState("");
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -59,11 +59,21 @@ const CreateShippingLink = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedService || !trackingNumber) {
+
+    if (!selectedService || !trackingNumber || !codAmount) {
       toast({
         title: "خطأ",
         description: "الرجاء ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = parseFloat(codAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء إدخال مبلغ صحيح",
         variant: "destructive",
       });
       return;
@@ -253,17 +263,21 @@ const CreateShippingLink = () => {
               <div>
                 <Label className="mb-2 flex items-center gap-2 text-sm">
                   <DollarSign className="w-3 h-3" />
-                  مبلغ الدفع عند الاستلام
+                  مبلغ الدفع عند الاستلام *
                 </Label>
                 <Input
                   type="number"
                   value={codAmount}
                   onChange={(e) => setCodAmount(e.target.value)}
-                  placeholder="0.00"
+                  placeholder="500.00"
                   className="h-9 text-sm"
                   step="0.01"
                   min="0"
+                  required
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  💡 سيتم استخدام هذا المبلغ في جميع صفحات الدفع
+                </p>
               </div>
               
               {/* Payment Method Selection */}
