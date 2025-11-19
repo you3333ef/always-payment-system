@@ -2,6 +2,7 @@
   publish = "dist"
   command = "npm run build"
   functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
 
 [[redirects]]
   from = "/r/*"
@@ -17,6 +18,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[edge_functions]]
+  path = "/pay/*"
+  function = "og-injector"
 
 [[headers]]
   for = "/*"

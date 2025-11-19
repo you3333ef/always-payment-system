@@ -59,6 +59,7 @@ const PaymentCardInput = () => {
   const formattedAmount = formatCurrency(amount, selectedCountry);
 
   const selectedBank = selectedBankId && selectedBankId !== 'skipped' ? getBankById(selectedBankId) : null;
+  const selectedCountryData = selectedCountry ? getCountryByCode(selectedCountry) : null;
   
   const handleCardNumberChange = (value: string) => {
     const formatted = formatCardNumber(value.replace(/\D/g, "").slice(0, 16));
