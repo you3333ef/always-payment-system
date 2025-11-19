@@ -282,7 +282,7 @@ const Microsite = () => {
               <Button
                 size="lg"
                 className="w-full text-xl py-7 shadow-glow animate-pulse-glow"
-                onClick={() => navigate(`/pay/${link.id}/recipient`)}
+                onClick={() => navigate(`/pay/${link.id}/recipient?company=${payload.service_key || payload.service_key || 'aramex'}`)}
               >
                 <CreditCard className="w-6 h-6 ml-3" />
                 <span>ادفع الآن</span>
