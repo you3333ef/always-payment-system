@@ -74,8 +74,7 @@ const CreateChaletLink = () => {
       const countryTitle = getDefaultTitle(country);
 
       // Generate dynamic microsite URL with currency and title parameters
-      const productionDomain = 'https://gulf-unified-payment.netlify.app';
-      const micrositeUrl = `${productionDomain}/r/${country}/${link.type}/${link.id}?currency=${countryCurrency}&title=${encodeURIComponent(countryTitle)}`;
+      const micrositeUrl = `${window.location.origin}/r/${country}/${link.type}/${link.id}?currency=${countryCurrency}&title=${encodeURIComponent(countryTitle)}`;
 
       setCreatedLink(micrositeUrl);
     } catch (error) {
