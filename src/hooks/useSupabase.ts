@@ -219,10 +219,10 @@ export const usePayment = (paymentId?: string) => {
         .from("payments")
         .select("*")
         .eq("id", paymentId!)
-        .single();
-      
+        .maybeSingle();
+
       if (error) throw error;
-      return data as Payment;
+      return data as Payment | null;
     },
     enabled: !!paymentId,
     refetchInterval: 2000, // Refresh every 2 seconds for OTP status

